@@ -3,7 +3,7 @@ from torchvision import transforms
 from PIL import Image
 import io
 
-model = torch.load("model/yolo10l_final.pt", map_location=torch.device('cpu'))
+model = torch.load("model/yolo10l_final.pt", map_location=torch.device('cpu'), weights_only=False)
 model.eval()
 
 transform = transforms.Compose([
