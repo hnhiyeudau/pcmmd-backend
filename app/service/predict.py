@@ -3,8 +3,13 @@ from torchvision import transforms
 from PIL import Image
 import io
 
-model = torch.load("model/yolo10l_final.pt", map_location=torch.device('cpu'), weights_only=False)
-model.eval()
+from ultralytics import YOLO
+
+model = YOLO("model/yolo10l_final.pt")
+
+
+# model = torch.load("model/yolo10l_final.pt", map_location=torch.device('cpu'), weights_only=False)
+# model.eval()
 
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
