@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: pcmmd-backend
+    name: pcmmd-api
     env: python
     plan: free
     buildCommand: "pip install -r requirements.txt"
