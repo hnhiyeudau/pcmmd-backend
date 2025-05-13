@@ -3,6 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.service.predict import predict_image
 
 app = FastAPI()
+
+origins = [
+    "https://pcmmd-frontend-mv2w5lz5s-nhutduys-projects.vercel.app",
+    "http://localhost:3000",  # Cho phép dùng local test luôn
+]
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
