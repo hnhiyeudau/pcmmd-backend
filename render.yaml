@@ -1,4 +1,4 @@
-services:
+service:
   - type: web
     name: pcmmd-api
     env: python
