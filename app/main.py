@@ -8,6 +8,10 @@ app.add_middleware(
     allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
 )
 
+@app.get("/")
+def root():
+    return {"message": "PCMMD FastAPI backend is running!"}
+
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
     result = await predict_image(file)
