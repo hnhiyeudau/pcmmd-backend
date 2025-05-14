@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 import uvicorn
 import os
 import sys
-from app.services.predict import process_image, load_model
+from app.service.predict import process_image, load_model
 
 app = FastAPI(title="PCMMD Backend", 
               description="Backend for Cell Morphology and Migration Dynamics Analysis")
