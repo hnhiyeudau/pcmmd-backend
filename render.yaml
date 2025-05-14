@@ -7,3 +7,7 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.10.11
+      - key: ALLOWED_ORIGINS
+        value: https://pcmmd-frontend.vercel.app  # Đường dẫn frontend Vercel của bạn
+    healthCheckPath: /
+    autoDeploy: true
