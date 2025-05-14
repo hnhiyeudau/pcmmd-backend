@@ -1,59 +1,81 @@
-# from fastapi import FastAPI, File, UploadFile
-# from fastapi.middleware.cors import CORSMiddleware
-# from app.service.predict import predict_image
-
-# app = FastAPI()
-
-# # origins = [
-# #     "https://pcmmd-frontend-mv2w5lz5s-nhutduys-projects.vercel.app",
-# #     "http://localhost:3000",  # Cho phép dùng local test luôn
-# # ]
-
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=["https://pcmmd-frontend-mv2w5lz5s-nhutduys-projects.vercel.app",
-#     "http://localhost:3000",
-#     ], 
-#     allow_credentials=True,
-#     allow_methods=["*"], 
-#     allow_headers=["*"]
-# )
-
-# @app.get("/")
-# def root():
-#     return {"message": "PCMMD FastAPI backend is running!"}
-
-# @app.post("/predict")
-# async def predict(file: UploadFile = File(...)):
-#     result = await predict_image(file)
-#     return result
-
-
-
-
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from app.service.predict import predict_image
+from fastapi.responses import JSONResponse
+import uvicorn
+import os
+import sys
+from app.services.predict import process_image, load_model
 
-app = FastAPI()
+app = FastAPI(title="PCMMD Backend", 
+              description="Backend for Cell Morphology and Migration Dynamics Analysis")
 
-# Cho phép tất cả origin gọi API (phù hợp nếu frontend trên Vercel)
+# Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Hoặc chỉ frontend của bạn: ["https://pcmmd-frontend.vercel.app"]
+    allow_origins=["*"],  # In production, specify your frontend domain
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Initialize model
+model = None
+
+@app.on_event("startup")
+async def startup_event():
+    global model
+    try:
+        model_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "model", "yolo10l_final.pt")
+        model = load_model(model_path)
+        print("Model loaded successfully!")
+    except Exception as e:
+        print(f"Error loading model: {e}")
+        sys.exit(1)
+
 @app.get("/")
-def root():
-    return {"message": "PCMMD FastAPI backend is running!"}
+def read_root():
+    return {"status": "online", "message": "PCMMD API is running"}
 
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
-    """
-    Nhận ảnh từ client, dự đoán bằng YOLO, trả về nhãn và độ tin cậy.
-    """
-    result = await predict_image(file)
-    return result
+    if not file:
+        raise HTTPException(status_code=400, detail="No file uploaded")
+    
+    # Check file extension
+    allowed_extensions = [".jpg", ".jpeg", ".png", ".tif", ".tiff"]
+    file_ext = os.path.splitext(file.filename)[1].lower()
+    if file_ext not in allowed_extensions:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"File type not supported. Please upload {', '.join(allowed_extensions)}"
+        )
+    
+    try:
+        contents = await file.read()
+        results = process_image(model, contents)
+        return JSONResponse(content=results)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Processing error: {str(e)}")
+
+@app.get("/metrics")
+def get_metrics():
+    """Return available metrics for cell migration analysis"""
+    metrics = {
+        "morphological": [
+            {"id": "area", "name": "Cell Area", "unit": "μm²", "description": "Total area occupied by the cell"},
+            {"id": "perimeter", "name": "Cell Perimeter", "unit": "μm", "description": "Perimeter of the cell boundary"},
+            {"id": "aspect_ratio", "name": "Aspect Ratio", "unit": "", "description": "Ratio of major to minor axis length"},
+            {"id": "circularity", "name": "Circularity", "unit": "", "description": "How closely the cell resembles a perfect circle"},
+            {"id": "solidity", "name": "Solidity", "unit": "", "description": "Measure of cell convexity"},
+        ],
+        "migratory": [
+            {"id": "velocity", "name": "Migration Velocity", "unit": "μm/min", "description": "Speed of cell movement"},
+            {"id": "displacement", "name": "Net Displacement", "unit": "μm", "description": "Straight-line distance traveled"},
+            {"id": "directionality", "name": "Directionality Ratio", "unit": "", "description": "Measure of migration persistence"},
+            {"id": "msd", "name": "Mean Square Displacement", "unit": "μm²", "description": "Quantifies exploration area over time"},
+        ]
+    }
+    return metrics
+
+if __name__ == "__main__":
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
