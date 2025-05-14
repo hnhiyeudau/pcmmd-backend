@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 import uvicorn
 import os
 import sys
-from app.service.predict import process_image, load_model
+from app.services.predict import process_image, load_model
 
 app = FastAPI(title="PCMMD Backend", 
               description="Backend for Cell Morphology and Migration Dynamics Analysis")
@@ -12,7 +12,7 @@ app = FastAPI(title="PCMMD Backend",
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify your frontend domain
+    allow_origins=["*", "https://pcmmd-frontend.vercel.app"],  # Thêm domain Vercel của bạn
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
